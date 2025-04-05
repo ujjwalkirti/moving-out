@@ -66,7 +66,7 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 	};
 
 	return (
-		<Box sx={{ maxWidth: 600, mx: "auto", px: 2 }}>
+		<Box sx={{ width: "100%", maxWidth: 600, mx: "auto", px: { xs: 1, md: 2 } }}>
 			<form onSubmit={handleSubmit}>
 				<FormControl fullWidth margin="normal">
 					<TextField inputRef={nameRef} label="Name" required />
