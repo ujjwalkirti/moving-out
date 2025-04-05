@@ -3,7 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { Box, Button, Container, Typography } from "@mui/material";
 import React from "react";
 
-export async function ListingFormPage() {
+async function ListingFormPage() {
 	const user = await currentUser();
 
 	const listings = await getAllListingsByUserId(user!.id);

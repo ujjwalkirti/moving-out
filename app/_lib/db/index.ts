@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 export async function connectToDB() {
     // check if MONGODB_URI is defined
-    if (!process.env.MONGODB_URI) {
+    if (!process.env.MONGO_URI) {
         throw new Error("MONGODB_URI is not defined");
     }
 
@@ -12,7 +12,7 @@ export async function connectToDB() {
         return;
     }
 
-    let connectionString = process.env.NODE_ENV === "production" ? process.env.MONGODB_URI : 'mongodb://localhost:27017/moving-out';
+    let connectionString = process.env.NODE_ENV === "production" ? process.env.MONGO_URI : 'mongodb://localhost:27017/moving-out';
     mongoose
         .connect(connectionString)
         .then(() => console.log("Connected to MongoDB"))
