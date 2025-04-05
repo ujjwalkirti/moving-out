@@ -7,7 +7,7 @@ async function CreateListingPage() {
 	const defaultTags = ["urgent", "negotiable", "brand new", "used", "pickup only"];
 	return (
 		<div className="w-full flex flex-col items-center">
-			<Typography variant="h4" gutterBottom>
+			<Typography variant="h4" fontWeight={"bold"} gutterBottom>
 				Create a New Listing
 			</Typography>
 			<Typography variant="subtitle1" color="textSecondary" gutterBottom px={2}>

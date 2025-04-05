@@ -3,13 +3,17 @@
 import React, { useRef } from "react";
 import { TextField, Button, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Box, Chip, CircularProgress, Typography, ImageList, ImageListItem, IconButton } from "@mui/material";
 import { Close } from "@mui/icons-material";
-import LocationPicker from "./LocationPicker";
+import dynamic from "next/dynamic";
 
 interface CreateListingFormProps {
 	categories: string[];
 	types: string[];
 	defaultTags: string[];
 }
+
+const LocationPicker = dynamic(() => import("./LocationPicker"), {
+	ssr: false,
+});
 
 function CreateListingForm({ categories, types, defaultTags }: CreateListingFormProps) {
 	const [selectedFiles, setSelectedFiles] = React.useState<{ label: string; url: string }[]>([]);
@@ -21,7 +25,7 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 	const descRef = useRef<HTMLInputElement>(null);
 	const amountRef = useRef<HTMLInputElement>(null);
 	const imagesRef = useRef<HTMLInputElement>(null);
-    const locationRef = useRef<{ lat: number; lng: number }>(null);
+	const locationRef = useRef<{ lat: number; lng: number }>(null);
 	const categoryRef = useRef<HTMLSelectElement>(null);
 	const typeRef = useRef<HTMLSelectElement>(null);
 
@@ -62,7 +66,7 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 	};
 
 	return (
-		<Box sx={{ maxWidth: 600, mx: "auto", p: 2 }}>
+		<Box sx={{ maxWidth: 600, mx: "auto", px: 2 }}>
 			<form onSubmit={handleSubmit}>
 				<FormControl fullWidth margin="normal">
 					<TextField inputRef={nameRef} label="Name" required />
@@ -82,8 +86,7 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 
 				<LocationPicker
 					onLocationSelect={(coords) => {
-						// Save it to state or ref
-                        locationRef.current = { lat: coords[0], lng: coords[1] };
+						locationRef.current = { lat: coords[0], lng: coords[1] };
 					}}
 				/>
 
