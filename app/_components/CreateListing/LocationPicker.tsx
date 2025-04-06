@@ -1,85 +1,96 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import { useEffect, useState } from "react";
-import L from "leaflet";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { useEffect, useState, useCallback } from "react";
 
-const DraggableMarker = ({ position, onPositionChange }: { position: [number, number]; onPositionChange: (pos: [number, number]) => void }) => {
-	const [markerPosition, setMarkerPosition] = useState<[number, number]>(position);
+const containerStyle = {
+	width: "100%",
+	height: "400px",
+};
 
-	useMapEvents({
-		click(e) {
-			setMarkerPosition([e.latlng.lat, e.latlng.lng]);
-			onPositionChange([e.latlng.lat, e.latlng.lng]);
-		},
-	});
-
-	return (
-		<Marker
-			draggable
-			eventHandlers={{
-				dragend: (e) => {
-					const marker = e.target;
-					const newPos = marker.getLatLng();
-					setMarkerPosition([newPos.lat, newPos.lng]);
-					onPositionChange([newPos.lat, newPos.lng]);
-				},
-			}}
-			position={markerPosition}
-			icon={L.icon({
-				iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-				iconSize: [25, 41],
-				iconAnchor: [12, 41],
-			})}
-		/>
-	);
+const defaultCenter: google.maps.LatLngLiteral = {
+	lat: 28.6139,
+	lng: 77.209,
 };
 
 export default function LocationPicker({ onLocationSelect }: { onLocationSelect: (coords: [number, number]) => void }) {
-	const [position, setPosition] = useState<[number, number] | null>(null);
+	const [position, setPosition] = useState<google.maps.LatLngLiteral | null>(null);
 	const [address, setAddress] = useState<string>("");
+
+	const { isLoaded } = useJsApiLoader({
+		id: "google-map-script",
+		googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!, // 🔐 store in `.env.local`
+	});
 
 	useEffect(() => {
 		if (navigator.geolocation) {
 			navigator.geolocation.getCurrentPosition(
 				(pos) => {
-					const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+					const coords = {
+						lat: pos.coords.latitude,
+						lng: pos.coords.longitude,
+					};
 					setPosition(coords);
 					handlePositionChange(coords);
 				},
-				(err) => {
-					// Fallback to Delhi
-					const fallback: [number, number] = [28.6139, 77.209];
-					setPosition(fallback);
-					handlePositionChange(fallback);
+				() => {
+					setPosition(defaultCenter);
+					handlePositionChange(defaultCenter);
 				}
 			);
 		}
 	}, []);
 
-	const handlePositionChange = async (coords: [number, number]) => {
-		onLocationSelect(coords);
-		try {
-			const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords[0]}&lon=${coords[1]}`);
-			const data = await res.json();
-			setAddress(data.display_name);
-		} catch (error) {
-			console.error("Error fetching address:", error);
-			setAddress("Unable to fetch location name.");
-		}
-	};
+	const handlePositionChange = useCallback(
+		async (coords: google.maps.LatLngLiteral) => {
+			onLocationSelect([coords.lat, coords.lng]);
+			try {
+				const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`);
+				const data = await response.json();
+				const locationName = data.results?.[0]?.formatted_address || "Unknown location";
+				console.log("Location name:", data);
+				setAddress(locationName);
+			} catch (error) {
+				console.error("Reverse geocoding failed", error);
+				setAddress("Unable to fetch location name.");
+			}
+		},
+		[onLocationSelect]
+	);
 
-	if (!position) return <p>Fetching your location...</p>;
+	if (!isLoaded || !position) return <p>Loading map...</p>;
 
 	return (
 		<div className="flex flex-col items-start gap-3 my-4">
 			<label className="text-gray-600">Click on the map to select your location:</label>
-			<MapContainer center={position} zoom={13} style={{ height: "400px", width: "100%" }}>
-				<TileLayer attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-				<DraggableMarker position={position} onPositionChange={handlePositionChange} />
-			</MapContainer>
+			<GoogleMap
+				mapContainerStyle={containerStyle}
+				center={position}
+				zoom={13}
+				onClick={(e) => {
+					const coords = {
+						lat: e.latLng?.lat() || position.lat,
+						lng: e.latLng?.lng() || position.lng,
+					};
+					setPosition(coords);
+					handlePositionChange(coords);
+				}}
+			>
+				<Marker
+					position={position}
+					draggable
+					onDragEnd={(e) => {
+						const coords = {
+							lat: e.latLng?.lat() || position.lat,
+							lng: e.latLng?.lng() || position.lng,
+						};
+						setPosition(coords);
+						handlePositionChange(coords);
+					}}
+				/>
+			</GoogleMap>
 
-			{address && <p style={{ marginTop: "10px", fontStyle: "italic", color: "#555" }}>📍 Selected Location: {address}</p>}
+			{address && <p className="mt-2 italic text-gray-600">📍 Selected Location: {address}</p>}
 		</div>
 	);
 }

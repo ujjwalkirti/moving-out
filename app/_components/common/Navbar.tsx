@@ -30,7 +30,8 @@ function Navbar() {
 						<UserButton />
 					</SignedIn>
 				</div>
-				<div className="flex lg:hidden">
+				<div className="flex items-center gap-2 lg:hidden">
+					<UserButton />
 					<IconButton onClick={() => setOpen(!open)} sx={{ color: "white" }}>
 						<MenuIcon />
 					</IconButton>

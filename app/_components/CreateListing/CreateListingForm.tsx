@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useRef } from "react";
-import { TextField, Button, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Box, Chip, CircularProgress, Typography, ImageList, ImageListItem, IconButton } from "@mui/material";
+import { TextField, Button, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Box, CircularProgress, Typography, ImageList, ImageListItem, IconButton, FormLabel } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import dynamic from "next/dynamic";
+import { indianStatesAndUTs } from "@/app/_constants/CreateListing";
 
 interface CreateListingFormProps {
 	categories: string[];
@@ -17,51 +18,29 @@ const LocationPicker = dynamic(() => import("./LocationPicker"), {
 
 function CreateListingForm({ categories, types, defaultTags }: CreateListingFormProps) {
 	const [selectedFiles, setSelectedFiles] = React.useState<{ label: string; url: string }[]>([]);
+	const [formState, setFormState] = React.useState<"submitting" | "idle">("idle");
 
-	const isSubmittingRef = useRef(false);
-
-	const nameRef = useRef<HTMLInputElement>(null);
-	const dateRef = useRef<HTMLInputElement>(null);
-	const descRef = useRef<HTMLInputElement>(null);
-	const amountRef = useRef<HTMLInputElement>(null);
+	const locationRef = React.useRef<{ lat: number; lng: number }>(null);
 	const imagesRef = useRef<HTMLInputElement>(null);
-	const locationRef = useRef<{ lat: number; lng: number }>(null);
-	const categoryRef = useRef<HTMLSelectElement>(null);
-	const typeRef = useRef<HTMLSelectElement>(null);
-
-	const tagsRef = useRef<string[]>([]);
-
-	const handleTagsChange = (event: any) => {
-		const {
-			target: { value },
-		} = event;
-		tagsRef.current = typeof value === "string" ? value.split(",") : value;
-	};
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 
-		if (isSubmittingRef.current) return;
+		if (formState === "submitting") return;
 
-		isSubmittingRef.current = true;
+		setFormState("submitting");
 
-		const files = imagesRef.current?.files;
-
+		const files  = imagesRef.current?.files;
 		const imageFiles = files ? Array.from(files) : [];
 
-		const listing = {
-			name: nameRef.current?.value || "",
-			date: dateRef.current?.value ? new Date(dateRef.current.value) : new Date(),
-			description: descRef.current?.value || "",
-			amount: Number(amountRef.current?.value || 0),
-			category: categoryRef.current?.value || "",
-			type: typeRef.current?.value || "",
-			images: imageFiles,
-			tags: tagsRef.current,
-		};
+		const form = e.currentTarget as HTMLFormElement;
+		const formData = new FormData(form);
 
-		console.log("Form submitted:", listing);
+		for (const [key, value] of formData.entries()) {
+			console.log(`${key}: ${value}`);
+		}
 
+		setFormState("idle");
 		// Submit to API here
 	};
 
@@ -69,19 +48,23 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 		<Box sx={{ width: "100%", maxWidth: 600, mx: "auto", px: { xs: 1, md: 2 } }}>
 			<form onSubmit={handleSubmit}>
 				<FormControl fullWidth margin="normal">
-					<TextField inputRef={nameRef} label="Name" required />
+					<FormLabel>Name:</FormLabel>
+					<TextField name="name" placeholder="Ex: Iphone 14" aria-placeholder="Item name" type="text" required variant="outlined" />
 				</FormControl>
 
 				<FormControl fullWidth margin="normal">
-					<TextField inputRef={dateRef} type="date" label="Date" InputLabelProps={{ shrink: true }} required />
+					<FormLabel>Date by which you want it to be sold?</FormLabel>
+					<TextField helperText="Select a deadline within the next 3–5 days" name="date" type="date" variant="outlined" defaultValue={new Date().toISOString().split("T")[0]} required />
 				</FormControl>
 
 				<FormControl fullWidth margin="normal">
-					<TextField inputRef={descRef} label="Description" multiline rows={4} required />
+					<FormLabel>Please describe your item:</FormLabel>
+					<TextField name="description" placeholder="Ex: I want to sell my Iphone 14, and additional accessories etc etc." aria-placeholder="Description" multiline rows={4} required />
 				</FormControl>
 
 				<FormControl fullWidth margin="normal">
-					<TextField inputRef={amountRef} label="Amount (₹)" type="number" required />
+					<FormLabel>Give a reasonable price:</FormLabel>
+					<TextField name="amount" placeholder="Amount (₹)" aria-placeholder="Amount" variant="outlined" type="text" required />
 				</FormControl>
 
 				<LocationPicker
@@ -90,9 +73,44 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 					}}
 				/>
 
+				{/* address line 1 */}
+				<FormControl fullWidth margin="normal">
+					<FormLabel>Flat No. / House No. / Building Name</FormLabel>
+					<TextField name="address_line_1" variant="outlined" placeholder="Ex: 123, ABC Street, XYZ Building" required />
+				</FormControl>
+				{/* address line 2 */}
+				<FormControl fullWidth margin="normal">
+					<FormLabel>Area / Street / Locality</FormLabel>
+					<TextField name="address_line_2" variant="outlined" placeholder="Ex: XYZ Area, XYZ Street, XYZ Locality" required />
+				</FormControl>
+				{/* address line 3 */}
+				<FormControl fullWidth margin="normal">
+					<FormLabel>Nearby landmark</FormLabel>
+					<TextField name="address_line_3" variant="outlined" placeholder="Optional" aria-placeholder="Nearby landmark, Optional" />
+				</FormControl>
+				{/* State selection */}
+				<FormControl fullWidth margin="normal">
+					<FormLabel>State</FormLabel>
+					<Select name="state" defaultValue="" required displayEmpty variant="outlined">
+						<MenuItem value="" disabled>
+							Select your state
+						</MenuItem>
+						{indianStatesAndUTs.map((state) => (
+							<MenuItem key={state} value={state}>
+								{state}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+				{/* PIN code */}
+				<FormControl fullWidth margin="normal">
+					<FormLabel>PIN Code</FormLabel>
+					<TextField name="pincode" variant="outlined" type="number" slotProps={{ htmlInput: { min: 100000, max: 999999 } }} placeholder="Ex: 400001" required />
+				</FormControl>
+
 				<FormControl fullWidth margin="normal">
 					<InputLabel>Category</InputLabel>
-					<Select inputRef={categoryRef} defaultValue="" input={<OutlinedInput label="Category" />} required>
+					<Select name="categories" defaultValue="" input={<OutlinedInput label="Category" />} required>
 						{categories.map((cat) => (
 							<MenuItem key={cat} value={cat}>
 								{cat}
@@ -103,7 +121,7 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 
 				<FormControl fullWidth margin="normal">
 					<InputLabel>Type</InputLabel>
-					<Select inputRef={typeRef} defaultValue="" input={<OutlinedInput label="Type" />} required>
+					<Select name="types" defaultValue="" input={<OutlinedInput label="Type" />} required>
 						{types.map((t) => (
 							<MenuItem key={t} value={t}>
 								{t}
@@ -165,36 +183,20 @@ function CreateListingForm({ categories, types, defaultTags }: CreateListingForm
 							>
 								<Close />
 							</IconButton>
-							<Typography variant="body2">{file.label}</Typography>
+							<Typography variant="body2" p={2}>
+								{file.label}
+							</Typography>
 						</ImageListItem>
 					))}
 				</ImageList>
 
 				<FormControl fullWidth margin="normal">
-					<InputLabel>Tags</InputLabel>
-					<Select
-						multiple
-						defaultValue={[]}
-						onChange={handleTagsChange}
-						input={<OutlinedInput label="Tags" />}
-						renderValue={(selected) => (
-							<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-								{(selected as string[]).map((tag) => (
-									<Chip key={tag} label={tag} />
-								))}
-							</Box>
-						)}
-					>
-						{defaultTags.map((tag) => (
-							<MenuItem key={tag} value={tag}>
-								{tag}
-							</MenuItem>
-						))}
-					</Select>
+					<FormLabel>Tags</FormLabel>
+					<TextField name="tags" variant="outlined" placeholder="Enter tags separated by commas" />
 				</FormControl>
 
-				<Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }} disabled={isSubmittingRef.current}>
-					{isSubmittingRef.current ? <CircularProgress size={24} /> : "Submit Listing"}
+				<Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2, fontWeight: "bold" }} disabled={formState === "submitting"}>
+					{formState === "submitting" ? <CircularProgress size={24} /> : "Submit Listing"}
 				</Button>
 			</form>
 		</Box>
